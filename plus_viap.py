@@ -19,14 +19,26 @@ from pyparsing import *
 from sympy.core.relational import Relational
 ParserElement.enablePackrat()
 
-''' Configration'''
+''' Configrations'''
 
 config = ConfigParser.RawConfigParser()
 config.read('config.properties')
 timeout = config.get('ConfigurationSection', 'timeout')
 app_id = config.get('ConfigurationSection', 'app_id')
 
+TIMEOUT = 60000
+Mathematica_id = None
 
+_base = ['=', '==', '!=', '<', '<=', '>', '>=', '*', '**', '!', '+', '-', '/', '%', 'ite', 'and', 'or', 'not',\
+         'implies', 'all', 'some', 'null']
+_infix_op = ['=', '==', '!=', '<', '<=', '>', '>=', '*', '**', '+', '-', '/', '%', 'implies']
+
+current_milli_time = lambda: int(round(time.time() * 1000))
+p = plyj.parser.Parser()
+
+'''Classes'''
+
+''' Functions'''
 def is_number(s):
     try:
         float(s)  # for int, long and float
@@ -37,29 +49,19 @@ def is_number(s):
             return False
     return True
 
-# Time Out
-if timeout.strip() != '' and timeout.strip() != 'None' and is_number(timeout.strip()) != False:
-    TIMEOUT = timeout.strip()
-else:
-    TIMEOUT = 60000
+def initConfig():
+    # Time Out
+    if timeout.strip() != '' and timeout.strip() != 'None' and is_number(timeout.strip()) != False:
+        global TIMEOUT
+        TIMEOUT = timeout.strip()
 
-if app_id.strip() != '' and app_id.strip() != 'None':
-    Mathematica_id = app_id.strip()
-else:
-    Mathematica_id = None
-
-_base = ['=', '==', '!=', '<', '<=', '>', '>=', '*', '**', '!', '+', '-', '/', '%', 'ite', 'and', 'or', 'not',\
-         'implies', 'all', 'some', 'null']
-_infix_op = ['=', '==', '!=', '<', '<=', '>', '>=', '*', '**', '+', '-', '/', '%', 'implies']
-
-current_milli_time = lambda: int(round(time.time() * 1000))
-p = plyj.parser.Parser()
-
+    if app_id.strip() != '' and app_id.strip() != 'None':
+        global Mathematica_id
+        Mathematica_id = app_id.strip()
 
 def getParser():
     global p
     return p
-
 
 def translate(file_name):
     if not (os.path.exists(file_name)):
@@ -71,6 +73,7 @@ def translate(file_name):
     tree = p.parse_file(file_name)
     print tree
 
-
-file_name = 'benchmark/fact.java'
-axiom = translate(file_name)
+if __name__ == "__main__":
+    initConfig()
+    file_name = 'benchmark/fact.java'
+    axiom = translate(file_name)
