@@ -4,7 +4,8 @@
 """
 Assumptions:
 1. Program variables:
-  - can be any word \w+
+  - "heap" is not allowed in any part of the name
+  - except for "heap", can be any word \w+,
   - cannot be _x\d*, _n\d*, _N\d* (these are reserved for general variables,
     natural number variables, and smallest macro constants in our axioms)
   - for a variable, its temporary variants are constructed by adding to it TEMP+number
@@ -191,7 +192,6 @@ def translateIf2(p,v):
 
 def replaceHeapInSeq(ax1, ax2):
     for i in range(len(ax1)):
-        print ax1[i]
         ax1[i] = ax1[i].replace("heap'", "heap*")
 
     for i in range(len(ax2)):
@@ -208,7 +208,7 @@ def translateSeq(p,v):
         axiom_list_sub(axioms2,'',TEMP+str(TC),v)
 
         # replace heap
-        replaceHeapInSeq(axioms1, axioms2)
+        #replaceHeapInSeq(axioms1, axioms2)
 
     else: #the first statement has a label
         axiom_list_sub(axioms2,'',LABEL+ll,v)
@@ -237,7 +237,7 @@ def translateAssign(p,v):
             axioms.append(t1 + ' = ' +  x+get_var_tuple(k))
 
     #adding axiom about heap
-    axioms.append("heap'(X) = heap(X)")
+    #axioms.append("heap'(X) = heap(X)")
     return axioms
 
 # convert a term like x(t1,t2) to ['x',2,t1,t2] where 2 is the arity of x 
@@ -392,8 +392,25 @@ vlr = [['J',0,['list']],['I',0,['list']],['K',0,['list']],['next',1,['list','lis
 
 #the main function
 if __name__ == '__main__':
-    ex1 = ['-1', '=', 'x', '1']  # x=1
-    ex2 = ['-1', '=', 'x', 'y+1']  # x=x+1
-    ex3 = ['-1', 'seq', ex1, ex2]  # x=1; x=y+1
-    v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
-    translate1(ex3, v1)
+    # ex1 = ['-1', '=', 'x', '1']  # x=1
+    # ex2 = ['-1', '=', 'x', 'y+1']  # x=y+1
+    # ex3 = ['-1', 'seq', ex1, ex2]  # x=1; x=y+1
+    # v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
+    # translate1(ex3, v1)
+
+    # fact0 = ['-1', 'seq', ['-1', '=', 'i', '1'], ['-1', '=', 'F', '1']]
+    # fact1 = ['-1', 'seq', ['-1', '=', 'F', 'F*i'], ['-1', '=', 'i', 'i+1']]
+    # fact2 = ['-1', 'while', 'i<=X', fact1]
+    # fact = ['-1', 'seq', fact0, fact2]
+    # vfact = [['i', 0, ['int']], ['X', 0, ['int']], ['F', 0, ['int']]]
+    # translate1(fact, vfact)
+
+    lr6 = ['-1', '=', 'I', 'K']
+    lr5 = ['-1', 'seq', ['-1', '=', 'J', 'I'], lr6]
+    lr4 = ['-1', 'seq', ['-1', '=', 'next(I)', 'J'], lr5]
+    lr3 = ['-1', 'seq', ['-1', '=', 'K', 'next(I)'], lr4]
+    lr2 = ['-1', 'while', 'I != null', lr3]
+    lr1 = ['-1', 'seq', lr2, ['-1', '=', 'I', 'J']]
+    lr = ['-1', 'seq', ['-1', '=', 'J', 'null'], lr1]
+    vlr = [['J', 0, ['list']], ['I', 0, ['list']], ['K', 0, ['list']], ['next', 1, ['list', 'list']]]
+    translate1(lr, vlr)
