@@ -84,9 +84,36 @@ def seq_type(program, variables):
         replace_heap_in_seq(axioms1, axioms2, LABEL+label_num)
     return axioms1+axioms2
 
-def one_if_type(program, vars):
-    axioms = []
-    print "ok"
+#   [label,'if1',condition,program]
+def one_if_type(program, variables):
+    condition = program[2]
+    cur_label_num = program[0]
+    rest_program = program[3]
+    second_label = last_label(rest_program)
+
+    axioms = trans_to_first_order(rest_program, variables)
+
+    if (cur_label_num == "-1"):
+        if (second_label == "-1"):
+            for i in range(len(axioms)):
+                axioms[i] = condition + " -> " + axioms[i]
+            for [name, arity, type] in variables:
+                axioms.append("not (" + condition + ") -> " + name + '\'' + ' = ' + name)
+        else: # a final label in body
+            for [name, arity, type] in variables:
+                axioms.append(condition + ' -> ' + name + ' = ' + name + LABEL + second_label)
+                axioms.append('not (' + condition + ') -> ' + name + ' = ' + name)
+    else: # if-then has a label# if-then has a label
+        if (second_label == '-1'): # body has no final label
+            replace_vars_in_axiom(axioms, '\'', LABEL+cur_label_num, variables)
+            for i in range(len(axioms)):
+                axioms[i] = condition + ' -> ' + axioms[i]
+            for [name, arity, type] in variables:
+                axioms.append('not (' + condition + ') -> ' + name + LABEL + cur_label_num + ' = ' + name)
+        else: # body has a final label
+            for [name, arity, type] in variables:
+                axioms.append(condition + ' -> ' + name + LABEL + cur_label_num + ' = ' + name + LABEL + second_label)
+                axioms.append('not (' + condition + ') -> ' + name + LABEL + cur_label_num + ' = ' + name)
     return axioms
 
 def if_else_type(program, vars):
@@ -125,7 +152,6 @@ def dispose_type(program, vars):
 #   statement or '-1' if it has no label, type is 'while' (while-loop),
 #   'if1' (if-then), 'if2' (if-then-else), 'seq' (sequence), or '='
 #   (assignment):
-#     [label,'if1',condition,program]
 #     [label,'if2',condition,program1,program2]
 #     [label,'while',condition,body]
 #     [label,'assign',left-side,right-side]
