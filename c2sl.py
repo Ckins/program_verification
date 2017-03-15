@@ -109,17 +109,54 @@ def one_if_type(program, variables):
             for i in range(len(axioms)):
                 axioms[i] = condition + ' -> ' + axioms[i]
             for [name, arity, type] in variables:
-                axioms.append('not (' + condition + ') -> ' + name + LABEL + cur_label_num + ' = ' + name)
+                axioms.append('not (' + condition + ') -> ' +name + LABEL + cur_label_num + ' = ' + name)
         else: # body has a final label
             for [name, arity, type] in variables:
                 axioms.append(condition + ' -> ' + name + LABEL + cur_label_num + ' = ' + name + LABEL + second_label)
                 axioms.append('not (' + condition + ') -> ' + name + LABEL + cur_label_num + ' = ' + name)
     return axioms
 
-def if_else_type(program, vars):
-    axioms = []
-    print "ok"
-    return axioms
+#     [label,'if2',condition,program1,program2]
+
+def if_else_type(program, variables):
+    axioms1 = trans_to_first_order(program[3], variables)
+    axioms2 = trans_to_first_order(program[4], variables)
+    label1 = last_label(program[3])
+    label2 = last_label(program[4])
+    condition = program[2]
+    cur_num = program[0]
+
+    if (cur_num == "-1"): # no label, so it needs to be generated
+        if (label1 == "-1"):
+            for i in range(len(axioms1)):
+                axioms1[i] = condition + " -> " + axioms1[i]
+        else:
+            for [name, arity, type] in variables:
+                axioms1.append(condition + " -> " + name + "' = " + name + LABEL + label1)
+
+        if (label2 == "-1"):
+            for i in range(len(axioms2)):
+                axioms2[i] = 'not (' + condition + ') -> ' + axioms2[i]
+        else:  # if case has no label
+            for [name, arity, type] in variables:
+                axioms2.append('not (' + condition + ') -> ' + name + '\' = ' + name + LABEL + label2)
+    else:
+        if (label1 == "-1"):
+            replace_vars_in_axiom(axioms1, '\'', LABEL + cur_num, variables)
+            for i in range(len(axioms1)):
+                axioms1[i] = condition + ' -> ' + axioms1[i]
+        else:
+            for [name, arity, type] in variables:
+                axioms1.append(condition + ' -> ' + name + LABEL + cur_num + ' = ' + name + LABEL + label1)
+        if (label2 == '-1'):  # else case has no final label
+            replace_vars_in_axiom(axioms2, '\'', LABEL + cur_num)
+            for i in range(len(axioms2)):
+                axioms2[i] = 'not (' + condition + ') -> ' + axioms2[i]
+        else:  # if case has label
+            for [name, arity, type] in variables:
+                axioms2.append('not (' + condition + ') -> ' + name + LABEL + cur_num + ' = ' + name + LABEL + label2)
+
+    return axioms1+axioms2
 
 def while_type(program, vars):
     axioms = []
@@ -152,9 +189,7 @@ def dispose_type(program, vars):
 #   statement or '-1' if it has no label, type is 'while' (while-loop),
 #   'if1' (if-then), 'if2' (if-then-else), 'seq' (sequence), or '='
 #   (assignment):
-#     [label,'if2',condition,program1,program2]
 #     [label,'while',condition,body]
-#     [label,'assign',left-side,right-side]
 #     [label,'cons',left-side,right-side]
 def trans_to_first_order(program, variables):
     method = program[1]
@@ -191,7 +226,7 @@ def trans_start(program, variables):
 
 #the main function
 if __name__ == '__main__':
-    ex1 = ['-1', 'assign', 'x', '1']  # x=1
+    ex1 = ['1', 'assign', 'x', '1']  # x=1
     ex2 = ['-1', 'assign', 'x', 'y+1']  # x=y+1
     ex3 = ['-1', 'seq', ex1, ex2]  # x=1; x=y+1
     v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
