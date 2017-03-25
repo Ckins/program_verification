@@ -334,7 +334,7 @@ def extend_arg(s,n,v,tc,bl):
                         else:
                             s=s[:i[1]]+'('+n+')'+s[i[1]:]
     return s[:-1]
-  
+
 
 # testing examples. 
 
@@ -392,11 +392,11 @@ vlr = [['J',0,['list']],['I',0,['list']],['K',0,['list']],['next',1,['list','lis
 
 #the main function
 if __name__ == '__main__':
-    # ex1 = ['-1', '=', 'x', '1']  # x=1
-    # ex2 = ['-1', '=', 'x', 'y+1']  # x=y+1
-    # ex3 = ['-1', 'seq', ex1, ex2]  # x=1; x=y+1
-    # v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
-    # translate1(ex3, v1)
+    ex3 = ['-1', '=', 'x', 'y+2'] # x = y + 2
+    ex2 = ['-1', 'seq', ['-1', '=', 'x', '1'], ex3] # x = 1
+    ex1 = ['-1', 'seq', ['-1', '=', 'y', '5'], ex2]  # y=5; x=1; x=y+1
+    v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
+    translate1(ex1, v1)
 
     # fact0 = ['-1', 'seq', ['-1', '=', 'i', '1'], ['-1', '=', 'F', '1']]
     # fact1 = ['-1', 'seq', ['-1', '=', 'F', 'F*i'], ['-1', '=', 'i', 'i+1']]
@@ -405,12 +405,12 @@ if __name__ == '__main__':
     # vfact = [['i', 0, ['int']], ['X', 0, ['int']], ['F', 0, ['int']]]
     # translate1(fact, vfact)
 
-    lr6 = ['-1', '=', 'I', 'K']
-    lr5 = ['-1', 'seq', ['-1', '=', 'J', 'I'], lr6]
-    lr4 = ['-1', 'seq', ['-1', '=', 'next(I)', 'J'], lr5]
-    lr3 = ['-1', 'seq', ['-1', '=', 'K', 'next(I)'], lr4]
-    lr2 = ['-1', 'while', 'I != null', lr3]
-    lr1 = ['-1', 'seq', lr2, ['-1', '=', 'I', 'J']]
-    lr = ['-1', 'seq', ['-1', '=', 'J', 'null'], lr1]
-    vlr = [['J', 0, ['list']], ['I', 0, ['list']], ['K', 0, ['list']], ['next', 1, ['list', 'list']]]
-    translate1(lr, vlr)
+    # lr6 = ['-1', '=', 'I', 'K']
+    # lr5 = ['-1', 'seq', ['-1', '=', 'J', 'I'], lr6]
+    # lr4 = ['-1', 'seq', ['-1', '=', 'next(I)', 'J'], lr5]
+    # lr3 = ['-1', 'seq', ['-1', '=', 'K', 'next(I)'], lr4]
+    # lr2 = ['-1', 'while', 'I != null', lr3]
+    # lr1 = ['-1', 'seq', lr2, ['-1', '=', 'I', 'J']]
+    # lr = ['-1', 'seq', ['-1', '=', 'J', 'null'], lr1]
+    # vlr = [['J', 0, ['list']], ['I', 0, ['list']], ['K', 0, ['list']], ['next', 1, ['list', 'list']]]
+    # translate1(lr, vlr)
