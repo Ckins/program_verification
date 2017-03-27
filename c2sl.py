@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # March 13, 2017
 # A translator from C to FOL in python
 
@@ -178,9 +181,34 @@ def while_type(program, variables):
     LC += 1
     return axioms
 
-def cons_type(program, vars):
+def cons_type(label_num, left_val, right_list, variables):
     axioms = []
-    print "ok"
+    origin = left_val
+    if (label_num != '-1'):
+        left_val = left_val + LABEL + label_num
+        heap = "heap" + LABEL + label_num
+    else:
+        left_val = left_val + "'"
+        heap = "heap'"
+    for [name, arity, types] in variables:
+        if (name != origin):
+            axioms.append(name + "' = " + name)
+        else:
+            first_step = "not(" + left_val + " = nil) and not(" + left_val + ") = ill)"
+            second_step = "and " + heap + "(" + left_val + ") = nil"
+            if_part = "for all x. not(x = " + left_val + ") "
+            axioms.append(heap + "(" + left_val + ") = " + str(right_list[0]))
+
+            i = 1
+            while (i < (len(right_list))):
+                axioms.append(heap + "(" + left_val + " + " + str(i) + ") = " + str(right_list[i]))
+                second_step += " and " + heap + "(" + left_val + " + " + str(i) + ") = nil"
+                if_part += "and not(x = " + left_val + " + " + str(i) + ") "
+                i += 1
+
+            if_part += "implies " + heap + "(x) = heap(x)"
+            axioms.append(first_step + second_step)
+            axioms.append(if_part)
     return axioms
 
 def right_address_type(program, vars):
@@ -218,7 +246,7 @@ def trans_to_first_order(program, variables):
     elif (method == "while"):
         return while_type(program, variables)
     elif (method == "cons"):
-        return cons_type(program, variables)
+        return cons_type(program[0], program[2], program[3], variables)
     elif (method == "right_address"):
         return right_address_type(program, variables)
     elif (method == "left_address"):
@@ -257,6 +285,22 @@ def test2():
     v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
     trans_start(ex1, v1)
 
+def test3():
+
+    # X := cons(1, 2, 3)
+    # Y ：= 【X]
+    # [X+1] := 4
+    # dispose(X+1)
+    ex_1 = ['-1', 'right_address', 'Y', 'X']
+    ex0 = ['-1', 'cons', 'X', ['1', '2', '3']]
+    ex4 = ['4', 'dispose', 'X+1']
+    ex3 = ['-1', 'seq', ['3', 'left_address', 'X+1', '4'], ex4]
+    ex2 = ['-1', 'seq', ex_1, ex3]
+    ex1 = ['-1', 'seq', ex0, ex2]
+
+    v1 = [['X', 0, ['int*']], ['Y', 0, ['int*']]]
+    trans_start(ex_1, v1)
+
 #the main function
 if __name__ == '__main__':
-    test2()
+    test3()
