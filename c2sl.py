@@ -218,7 +218,7 @@ def cons_type(label_num, left_val, right_list, variables):
 
 def right_address_type(label_num, left_val, right_val, variables):
     axioms = []
-    origin = left_val
+    origin = left_val  # in order to indentify the original var name
     if (label_num != '-1'):
         left_val = left_val + LABEL + label_num
         heap = "heap" + LABEL + label_num
@@ -241,30 +241,30 @@ def right_address_type(label_num, left_val, right_val, variables):
 
 def left_address_type(label_num, left_val, right_val, variables):
     axioms = []
-    origin = left_val
-    if (label_num != '-1'):
-        left_val = left_val + LABEL + label_num
-        heap = "heap" + LABEL + label_num
-    else:
-        left_val = left_val + "'"
-        heap = "heap'"
     for [name, arity, types] in variables:
-        if (name != origin):
-            if (label_num == '-1'):
-                axioms.append(name + "' = " + name)
-            else:
-                axioms.append(name + LABEL + label_num + " = " + name)
+        if (label_num == '-1'):
+            axioms.append(name + "' = " + name)
         else:
-            axioms.append("heap(" + right_val + ") = nil or heap(" + right_val + ") = ill implies "
-                          + left_val + " = ill")
-            axioms.append("not (heap(" + right_val + ") = nil) and not (heap(" + right_val
-                          + ") = ill) implies " + left_val + " = heap(" + right_val + ")")
-    axioms.append("for all x. " + heap + "(x) = heap(x)")
+            axioms.append(name + LABEL + label_num + " = " + name)
+    axioms.append("heap(" + left_val + ") = nil or heap(" + left_val + ") = ill implies heap'(" +
+                  left_val + ") = ill")
+    axioms.append("not (heap(" + left_val + ") = nil) and not (heap(" + left_val + ") = ill) implies heap'("
+                  + left_val + ") = " + right_val)
+    axioms.append("for all x. not (x = " + left_val + ") implies heap'(x) = heap(x)")
     return axioms
 
-def dispose_type(program, vars):
+def dispose_type(label_num, right_val, variables):
     axioms = []
-    print "ok"
+    for [name, arity, types] in variables:
+        if (label_num == '-1'):
+            axioms.append(name + "' = " + name)
+        else:
+            axioms.append(name + LABEL + label_num + " = " + name)
+    axioms.append("heap'(" + right_val + ") = nil or heap(" + right_val + ") = ill impiles heap'("
+                  + right_val + ") = ill")
+    axioms.append("not (heap(" + right_val + ") = nil) and not (heap(" + right_val + ") = ill impiles " +
+                    "heap'(" + right_val +") = nil")
+    axioms.append("for all x. not(x = " + right_val + ") impiles heap'(x) = heap(x)")
     return axioms
 
 # A program is represented by a list
@@ -332,12 +332,14 @@ def test3():
     # Y ：= 【X]
     # [X+1] := 4
     # dispose(X+1)
+    ex_2 = ['3', 'left_address', 'X+1', '4']
     ex_1 = ['2', 'right_address', 'Y', 'X']
-    ex0 = ['1', 'cons', 'X', ['1', '2', '3']]
-    ex4 = ['4', 'dispose', 'X+1']
-    ex3 = ['-1', 'seq', ['3', 'left_address', 'X+1', '4'], ex4]
+    ex_0 = ['1', 'cons', 'X', ['1', '2', '3']]
+
+    ex4 = ['-1', 'dispose', 'X+1']
+    ex3 = ['-1', 'seq', ex_2, ex4]
     ex2 = ['-1', 'seq', ex_1, ex3]
-    ex1 = ['-1', 'seq', ex0, ex_1]
+    ex1 = ['-1', 'seq', ex_0, ex2]
 
     v1 = [['X', 0, ['int*']], ['Y', 0, ['int*']]]
     trans_start(ex1, v1)
