@@ -7,8 +7,8 @@
 import re
 import sys
 
-TEMP = '^'  # one char to identify temp num
-LABEL = '^' # one char to identify label
+TEMP = ''  # one char to identify temp num
+LABEL = '' # one char to identify label
 TC = 0  # for generating temporary functions to yield xt1,xt2,...
 LC = 0  # for generating smallest macro constants in a loop _N1, _N2,... as well as
                # natural number variables _n1,_n2,...
@@ -64,7 +64,7 @@ def replace_vars_in_second_axiom(lstring, label, variables):
             tmp_str = ""
             prev = 0
             for index in indexList:
-                if (extStr[index.end()] != TEMP) and (extStr[index.end()] != "'"):
+                if (not extStr[index.end()].isalnum()) and (extStr[index.end()] != "'"):
                     tmp_str += extStr[prev:index.start()] + name + label
                     prev = index.end()
             tmp_str += extStr[prev:]
@@ -484,6 +484,4 @@ def hard_while_test_with_label():
 
 #the main function
 if __name__ == '__main__':
-    #hard_while_test()
-    #simple_while_test()
-    hard_test()
+    hard_while_test_with_label()
