@@ -114,7 +114,7 @@ def one_if_type(program, variables):
             for [name, arity, type] in variables:
                 axioms.append(condition + ' -> ' + name + ' = ' + name + LABEL + second_label)
                 axioms.append('not (' + condition + ') -> ' + name + ' = ' + name)
-    else: # if-then has a label# if-then has a label
+    else: # if-then has a label
         if (second_label == '-1'): # body has no final label
             replace_vars_in_first_axiom(axioms, '\'', LABEL+cur_label_num, variables)
             for i in range(len(axioms)):
@@ -137,7 +137,7 @@ def if_else_type(program, variables):
     condition = program[2]
     cur_num = program[0]
 
-    if (cur_num == "-1"): # no label, so it needs to be generated
+    if (cur_num == "-1"): # no label, so ignore it
         if (label1 == "-1"):
             for i in range(len(axioms1)):
                 axioms1[i] = condition + " -> " + axioms1[i]
@@ -169,8 +169,55 @@ def if_else_type(program, variables):
 
     return axioms1+axioms2
 
-#     [label,'while',condition,body]
+# used in while tyep method
+# return s[n], using variable list v, new temp count string tc, and body label bl
 
+def extend_arg(s,n,v,tc,bl):
+    r=re.compile('\w+[\']?')
+    s=s+' '
+    m=r.finditer(s)
+    l=[]
+    for mi in m:
+        l.append([mi.start(),mi.end(),mi.group()])
+    l.sort(reverse=True)
+    for i in l:
+        if i[2].startswith('_N'):
+            if s[i[1]]=='(':
+                s=s[:i[1]+1]+n+','+s[i[1]+1:]
+            else:
+                s=s[:i[1]]+'('+n+')'+s[i[1]:]
+        else:
+            for [x,k,_] in v:
+                if i[2].startswith(x):
+                    if i[2]==x:
+                        if bl=='-1':  #body has no label, use temp
+                            if s[i[1]]=='(':
+                                s=s[:i[1]]+tc+'('+n+','+s[i[1]+1:]
+                            else:
+                                s=s[:i[1]]+tc+'('+n+')'+s[i[1]:]
+                        else: #body has label, use it
+                            if s[i[1]]=='(':
+                                s=s[:i[1]]+LABEL+bl+'('+n+')'+s[i[1]+1:]
+                            else:
+                                s=s[:i[1]]+LABEL+bl+'('+n+')'+s[i[1]:]
+                    elif i[2]==x+'\'': #implies body has no label
+                            if s[i[1]]=='(':
+                                s=s[:i[1]-1]+tc+'('+n+'+1,'+s[i[1]+1:]
+                            else:
+                                s=s[:i[1]-1]+tc+'('+n+'+1)'+s[i[1]:]
+                    elif i[2]==x+LABEL+bl: #implies body has label
+                            if s[i[1]]=='(':
+                                s=s[:i[1]]+'('+n+'+1,'+s[i[1]+1:]
+                            else:
+                                s=s[:i[1]]+'('+n+'+1)'+s[i[1]:]
+                    elif (i[2].startswith(x+LABEL)) or (i[2].startswith(x+TEMP)):
+                        if s[i[1]]=='(':
+                            s=s[:i[1]+1]+n+','+s[i[1]+1:]
+                        else:
+                            s=s[:i[1]]+'('+n+')'+s[i[1]:]
+    return s[:-1]
+
+#     [label,'while',condition,body]
 def while_type(program, variables):
     global LC
     global TC
@@ -181,6 +228,29 @@ def while_type(program, variables):
     llabel = last_label(body)  # label of the last statement in the body
     TC += 1
     LC += 1
+
+    # first step
+    for i in range(len(axioms)):
+        axioms[i] = extend_arg(axioms[i], '_n' + str(LC), variables, TEMP+str(TC), llabel)
+
+
+    if (condition[0] == '(') and (condition[2][-1] == ')'):
+        sml='not ' + condition
+    else:
+        sml='not (' + condition +')'
+    sml=extend_arg(sml, '_n'+str(LC), variables, TEMP+str(TC), llabel)
+    axioms.append('smallest(_N' + str(LC) + ',_n' + str(LC) + ',' + sml + ')') #construct smallest macro
+
+
+    init = TEMP+str(TC) if (llabel=='-1') else LABEL+llabel
+    succ = '\'' if (cur_num == '-1') else LABEL + cur_num
+
+    for [name, arity, type] in variables: #initial value and output value axioms
+        axioms.append(name + init + '(0) = ' + name)
+        axioms.append(name + succ + ' = ' + name + init + '(_N' + str(LC) + ')')
+
+    axioms.append("for all x. heap(x) = heap(x, 0)")
+    axioms.append("for all x. heap'(x) = heap(x, _N" + str(LC) + ")")
     return axioms
 
 def cons_type(label_num, left_val, right_list, variables):
@@ -307,7 +377,7 @@ def trans_start(program, variables):
     ax = trans_to_first_order(program, variables)
     for x in ax: print(x)
 
-def test1():
+def simple_test():
     # 不用行号的例子
     ex3 = ['-1', '=', 'x', 'y+2'] # x = y + 2
     ex2 = ['-1', 'seq', ['-1', '=', 'x', '1'], ex3] # x = 1
@@ -315,7 +385,7 @@ def test1():
     v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
     trans_start(ex1, v1)
 
-def test2():
+def simple_label_test():
     # 使用行号的例子
 
     # y=5; x=1; x=y+1
@@ -326,7 +396,15 @@ def test2():
     v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
     trans_start(ex1, v1)
 
-def test3():
+def simple_while_test():
+    fact0 = ['-1', 'seq', ['-1', '=', 'i', '1'], ['-1', '=', 'F', '1']]
+    fact1 = ['-1', 'seq', ['-1', '=', 'F', 'F*i'], ['-1', '=', 'i', 'i+1']]
+    fact2 = ['-1', 'while', 'i<=X', fact1]
+    fact = ['-1', 'seq', fact0, fact2]
+    vfact = [['i', 0, ['int']], ['X', 0, ['int']], ['F', 0, ['int']]]
+    trans_start(fact, vfact)
+
+def hard_test():
 
     # X := cons(1, 2, 3)
     # Y ：= 【X]
@@ -344,6 +422,68 @@ def test3():
     v1 = [['X', 0, ['int*']], ['Y', 0, ['int*']]]
     trans_start(ex1, v1)
 
+def hard_while_test():
+    """
+    C1: I := cons(1, 2, 3)
+    C2: S := 0
+    C3: E := 3
+    C4: while S < E do
+    C5:     K := [I+S]
+    C6:     T := [I+E]
+    C7:     [I+S] := T
+    C8:     [I+E] := K
+    C9:     S := S+1
+    C10:    E := E-1
+    """
+    ex_10 = ['-1', '=', 'E', 'E-1']
+    ex_9 = ['-1', '=', 'S', 'S+1']
+    ex_8 = ['-1', 'left_address', 'I+E', 'K']
+    ex_7 = ['-1', 'left_address', 'I+S', 'T']
+    ex_6 = ['-1', 'right_address', 'T', 'I+E']
+    ex_5 = ['-1', 'right_address', 'K', 'I+S']
+    ex_3 = ['-1', '=', 'E', '3']
+    ex_2 = ['-1', '=', 'S', '0']
+    ex_1 = ['-1', 'cons', 'I', ['1', '2', '3']]
+
+    ex9 = ['-1', 'seq', ex_9, ex_10]
+    ex8 = ['-1', 'seq', ex_8, ex9]
+    ex7 = ['-1', 'seq', ex_7, ex8]
+    ex6 = ['-1', 'seq', ex_6, ex7]
+    ex5 = ['-1', 'seq', ex_5, ex6]
+    ex4 = ['-1', 'while', 'S < E', ex5]
+    ex3 = ['-1', 'seq', ex_3, ex4]
+    ex2 = ['-1', 'seq', ex_2, ex3]
+    ex1 = ['-1', 'seq', ex_1, ex2]
+
+    v1 = [['I', 0, ['int*']], ['S', 0, ['int']], ['E', 0, ['int']], ['K', 0, ['int*']], ['T', 0, ['int*']]]
+    trans_start(ex1, v1)
+
+def hard_while_test_with_label():
+    ex_10 = ['10', '=', 'E', 'E-1']
+    ex_9 = ['9', '=', 'S', 'S+1']
+    ex_8 = ['8', 'left_address', 'I+E', 'K']
+    ex_7 = ['7', 'left_address', 'I+S', 'T']
+    ex_6 = ['6', 'right_address', 'T', 'I+E']
+    ex_5 = ['5', 'right_address', 'K', 'I+S']
+    ex_3 = ['3', '=', 'E', '3']
+    ex_2 = ['2', '=', 'S', '0']
+    ex_1 = ['1', 'cons', 'I', ['1', '2', '3']]
+
+    ex9 = ['-1', 'seq', ex_9, ex_10]
+    ex8 = ['-1', 'seq', ex_8, ex9]
+    ex7 = ['-1', 'seq', ex_7, ex8]
+    ex6 = ['-1', 'seq', ex_6, ex7]
+    ex5 = ['-1', 'seq', ex_5, ex6]
+    ex4 = ['4', 'while', 'S < E', ex5]
+    ex3 = ['-1', 'seq', ex_3, ex4]
+    ex2 = ['-1', 'seq', ex_2, ex3]
+    ex1 = ['-1', 'seq', ex_1, ex2]
+
+    v1 = [['I', 0, ['int*']], ['S', 0, ['int']], ['E', 0, ['int']], ['K', 0, ['int*']], ['T', 0, ['int*']]]
+    trans_start(ex1, v1)
+
 #the main function
 if __name__ == '__main__':
-    test3()
+    #hard_while_test()
+    #simple_while_test()
+    hard_test()
