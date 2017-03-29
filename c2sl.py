@@ -206,7 +206,7 @@ def extend_arg(s,n,v,tc,bl):
                                 s=s[:i[1]-1]+tc+'('+n+'+1,'+s[i[1]+1:]
                             else:
                                 s=s[:i[1]-1]+tc+'('+n+'+1)'+s[i[1]:]
-                    # elif i[2]==x+LABEL+bl: #implies body has label
+                    # elif i[2]==x+LABEL+bl: #implies body has label and bl is the last one
                     #         if s[i[1]]=='(':
                     #             s=s[:i[1]]+'('+n+'+1,'+s[i[1]+1:]
                     #         else:
@@ -248,12 +248,13 @@ def while_type(program, variables):
 
     for [name, arity, type] in variables: #initial value and output value axioms
         axioms.append(name + succ + '(0) = ' + name)
-        axioms.append(name + succ + '(_n+1) = ' + name + init + "(_n)")
+        axioms.append(name + succ + '(_n' + str(LC) + '+1) = ' + name + init + "(_n)" + str(LC))
         axioms.append(name + succ + ' = ' + name + succ + '(_N' + str(LC) + ')')
 
 
-    axioms.append("for all x. heap(x) = heap"  + succ + "(x, 0)")
+    axioms.append("for all x. heap"  + succ + "(x, 0) = heap(x)")
     axioms.append("for all x. heap" + succ + "(x) = heap" + succ + "(x, _N" + str(LC) + ")")
+    axioms.append("for all x. heap" + succ + "(x, _n" + str(LC) + "+1) = heap" + init + "(x, _n" + str(LC) + ")")
 
     return axioms
 
@@ -320,11 +321,18 @@ def left_address_type(label_num, left_val, right_val, variables):
             axioms.append(name + "' = " + name)
         else:
             axioms.append(name + LABEL + label_num + " = " + name)
-    axioms.append("heap(" + left_val + ") = nil or heap(" + left_val + ") = ill implies heap'(" +
+    if (label_num == '-1'):
+        axioms.append("heap(" + left_val + ") = nil or heap(" + left_val + ") = ill implies heap'(" +
                   left_val + ") = ill")
-    axioms.append("not (heap(" + left_val + ") = nil) and not (heap(" + left_val + ") = ill) implies heap'("
+        axioms.append("not (heap(" + left_val + ") = nil) and not (heap(" + left_val + ") = ill) implies heap'("
                   + left_val + ") = " + right_val)
-    axioms.append("for all x. not (x = " + left_val + ") implies heap'(x) = heap(x)")
+        axioms.append("for all x. not (x = " + left_val + ") implies heap'(x) = heap(x)")
+    else:
+        axioms.append("heap(" + left_val + ") = nil or heap(" + left_val + ") = ill implies heap" + LABEL + label_num +
+                      "(" + left_val + ") = ill")
+        axioms.append("not (heap(" + left_val + ") = nil) and not (heap(" + left_val + ") = ill) implies heap"
+                      + LABEL + label_num + "(" + left_val + ") = " + right_val)
+        axioms.append("for all x. not (x = " + left_val + ") implies heap" + LABEL + label_num + "(x) = heap(x)")
     return axioms
 
 def dispose_type(label_num, right_val, variables):
@@ -334,11 +342,12 @@ def dispose_type(label_num, right_val, variables):
             axioms.append(name + "' = " + name)
         else:
             axioms.append(name + LABEL + label_num + " = " + name)
-    axioms.append("heap'(" + right_val + ") = nil or heap(" + right_val + ") = ill impiles heap'("
+    heap = "heap'" if (label_num == '-1') else "heap" + LABEL + label_num
+    axioms.append(heap + "(" + right_val + ") = nil or heap(" + right_val + ") = ill impiles " + heap + "("
                   + right_val + ") = ill")
     axioms.append("not (heap(" + right_val + ") = nil) and not (heap(" + right_val + ") = ill impiles " +
-                    "heap'(" + right_val +") = nil")
-    axioms.append("for all x. not(x = " + right_val + ") impiles heap'(x) = heap(x)")
+                    heap + "(" + right_val +") = nil")
+    axioms.append("for all x. not(x = " + right_val + ") impiles " + heap + "(x) = heap(x)")
     return axioms
 
 # A program is represented by a list
@@ -479,7 +488,7 @@ def hard_while_test_with_label():
     ex7 = ['-1', 'seq', ex_7, ex8]
     ex6 = ['-1', 'seq', ex_6, ex7]
     ex5 = ['-1', 'seq', ex_5, ex6]
-    ex4 = ['4', 'while', 'S < E', ex5]
+    ex4 = ['-1', 'while', 'S < E', ex5]
     ex3 = ['-1', 'seq', ex_3, ex4]
     ex2 = ['-1', 'seq', ex_2, ex3]
     ex1 = ['-1', 'seq', ex_1, ex2]
