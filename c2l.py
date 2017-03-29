@@ -398,9 +398,9 @@ if __name__ == '__main__':
     # v1 = [['x', 0, ['int']], ['y', 0, ['int']]]
     # translate1(ex1, v1)
 
-    fact0 = ['-1', 'seq', ['-1', '=', 'i', '1'], ['-1', '=', 'F', '1']]
-    fact1 = ['-1', 'seq', ['-1', '=', 'F', 'F*i'], ['-1', '=', 'i', 'i+1']]
-    fact2 = ['-1', 'while', 'i<=X', fact1]
+    fact0 = ['-1', 'seq', ['1', '=', 'i', '1'], ['2', '=', 'F', '1']]
+    fact1 = ['-1', 'seq', ['4', '=', 'F', 'F*i'], ['5', '=', 'i', 'i+1']]
+    fact2 = ['3', 'while', 'i<=X', fact1]
     fact = ['-1', 'seq', fact0, fact2]
     vfact = [['i', 0, ['int']], ['X', 0, ['int']], ['F', 0, ['int']]]
     translate1(fact, vfact)

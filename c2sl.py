@@ -8,7 +8,7 @@ import re
 import sys
 
 TEMP = ''  # one char to identify temp num
-LABEL = '' # one char to identify label
+LABEL = '_' # one char to identify label
 TC = 0  # for generating temporary functions to yield xt1,xt2,...
 LC = 0  # for generating smallest macro constants in a loop _N1, _N2,... as well as
                # natural number variables _n1,_n2,...
@@ -64,7 +64,8 @@ def replace_vars_in_second_axiom(lstring, label, variables):
             tmp_str = ""
             prev = 0
             for index in indexList:
-                if (not extStr[index.end()].isalnum()) and (extStr[index.end()] != "'"):
+                if (not extStr[index.end()].isalnum()) and (extStr[index.end()] != "'")\
+                        and extStr[index.end()] != LABEL:
                     tmp_str += extStr[prev:index.start()] + name + label
                     prev = index.end()
             tmp_str += extStr[prev:]
@@ -205,11 +206,11 @@ def extend_arg(s,n,v,tc,bl):
                                 s=s[:i[1]-1]+tc+'('+n+'+1,'+s[i[1]+1:]
                             else:
                                 s=s[:i[1]-1]+tc+'('+n+'+1)'+s[i[1]:]
-                    elif i[2]==x+LABEL+bl: #implies body has label
-                            if s[i[1]]=='(':
-                                s=s[:i[1]]+'('+n+'+1,'+s[i[1]+1:]
-                            else:
-                                s=s[:i[1]]+'('+n+'+1)'+s[i[1]:]
+                    # elif i[2]==x+LABEL+bl: #implies body has label
+                    #         if s[i[1]]=='(':
+                    #             s=s[:i[1]]+'('+n+'+1,'+s[i[1]+1:]
+                    #         else:
+                    #             s=s[:i[1]]+'('+n+'+1)'+s[i[1]:]
                     elif (i[2].startswith(x+LABEL)) or (i[2].startswith(x+TEMP)):
                         if s[i[1]]=='(':
                             s=s[:i[1]+1]+n+','+s[i[1]+1:]
@@ -229,11 +230,11 @@ def while_type(program, variables):
     TC += 1
     LC += 1
 
-    # first step
+    # substitution part and n+1 part
     for i in range(len(axioms)):
         axioms[i] = extend_arg(axioms[i], '_n' + str(LC), variables, TEMP+str(TC), llabel)
 
-
+    # smallest part
     if (condition[0] == '(') and (condition[2][-1] == ')'):
         sml='not ' + condition
     else:
@@ -246,11 +247,14 @@ def while_type(program, variables):
     succ = '\'' if (cur_num == '-1') else LABEL + cur_num
 
     for [name, arity, type] in variables: #initial value and output value axioms
-        axioms.append(name + init + '(0) = ' + name)
-        axioms.append(name + succ + ' = ' + name + init + '(_N' + str(LC) + ')')
+        axioms.append(name + succ + '(0) = ' + name)
+        axioms.append(name + succ + '(_n+1) = ' + name + init + "(_n)")
+        axioms.append(name + succ + ' = ' + name + succ + '(_N' + str(LC) + ')')
 
-    axioms.append("for all x. heap(x) = heap(x, 0)")
-    axioms.append("for all x. heap'(x) = heap(x, _N" + str(LC) + ")")
+
+    axioms.append("for all x. heap(x) = heap"  + succ + "(x, 0)")
+    axioms.append("for all x. heap" + succ + "(x) = heap" + succ + "(x, _N" + str(LC) + ")")
+
     return axioms
 
 def cons_type(label_num, left_val, right_list, variables):
@@ -422,11 +426,10 @@ def hard_test():
     v1 = [['X', 0, ['int*']], ['Y', 0, ['int*']]]
     trans_start(ex1, v1)
 
-def hard_while_test():
-    """
+"""
     C1: I := cons(1, 2, 3)
-    C2: S := 0
-    C3: E := 3
+    C2: S := 1
+    C3: E := 4
     C4: while S < E do
     C5:     K := [I+S]
     C6:     T := [I+E]
@@ -434,15 +437,17 @@ def hard_while_test():
     C8:     [I+E] := K
     C9:     S := S+1
     C10:    E := E-1
-    """
+"""
+
+def hard_while_test():
     ex_10 = ['-1', '=', 'E', 'E-1']
     ex_9 = ['-1', '=', 'S', 'S+1']
     ex_8 = ['-1', 'left_address', 'I+E', 'K']
     ex_7 = ['-1', 'left_address', 'I+S', 'T']
     ex_6 = ['-1', 'right_address', 'T', 'I+E']
     ex_5 = ['-1', 'right_address', 'K', 'I+S']
-    ex_3 = ['-1', '=', 'E', '3']
-    ex_2 = ['-1', '=', 'S', '0']
+    ex_3 = ['-1', '=', 'E', '4']
+    ex_2 = ['-1', '=', 'S', '1']
     ex_1 = ['-1', 'cons', 'I', ['1', '2', '3']]
 
     ex9 = ['-1', 'seq', ex_9, ex_10]
